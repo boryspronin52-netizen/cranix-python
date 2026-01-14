@@ -1,5 +1,6 @@
 import netifaces
 from ipaddress import IPv4Interface
+from typing import List, Any
 
 def network_to_netifaces():
     """Ermittelt die Netzwerke, zu denen jede Netzwerkschnittstelle gehört, mit netifaces."""
@@ -61,8 +62,6 @@ def get_default_gateway_interface():
 
     return None
 
-import netifaces
-
 def get_default_interface_ip():
     """
     Finds the default network interface and returns its IPv4 address.
@@ -84,7 +83,21 @@ def get_default_interface_ip():
 
     return None
 
+def get_rooms() -> List[Any]:
+    """
+    Returns the list of the rooms on the server
+    """
+
+    rooms = []
+    cmd = f'/usr/sbin/crx_api.sh GET rooms/all'
+    try:
+        rooms = json.load(os.popen(cmd))
+    except:
+        pass
+    return rooms
+
 # Usage
 if __name__ == "__main__":
     ip_address = get_default_interface_ip()
     print(f"IP Address of default device: {ip_address}")
+    print(f"There are {len(get_rooms())} rooms in the school")
