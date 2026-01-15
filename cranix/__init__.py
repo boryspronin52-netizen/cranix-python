@@ -75,57 +75,79 @@ def prep_log_head():
         logs[5] = "<tr><td>New Groups</td><td>{0}</td></tr>\n".format(len(new_groups))
         logs[6] = "<tr><td>Deleted Groups</td><td>{0}</td></tr>\n".format(len(del_groups))
 
-def log_error(msg):
-    global logs
-    prep_log_head()
-    logs.insert(9,print_error(msg))
-    logs.append("</table></body></html>\n")
-    with open(import_dir + '/import.log','w') as output:
-        output.writelines(logs)
+def log_error(msg, _logs=None):
 
-def log_msg(title,msg):
-    global logs
-    prep_log_head()
-    logs.insert(9,print_msg(title, msg))
-    with open(import_dir + '/import.log','w') as output:
-        output.writelines(logs)
+    if _logs is None:
+        global logs
+        _logs = logs
 
-def add_group(name):
-    global new_group_count
-    global all_groups
+    prep_log_head()
+    _logs.insert(9,print_error(msg))
+    _logs.append("</table></body></html>\n")
+    with open(import_dir + '/import.log','w') as output:
+        output.writelines(_logs)
+
+def log_msg(title,msg, _logs=None):
+
+    if _logs is None:
+        global logs
+        _logs = logs
+
+    prep_log_head()
+    _logs.insert(9,print_msg(title, msg))
+    with open(import_dir + '/import.log','w') as output:
+        output.writelines(_logs)
+
+def add_group(name, _new_group_count=None, _all_groups=None):
+
+    if _new_group_count is None:
+        global new_group_count
+        _new_group_count = new_group_count
+
+    if _all_groups is None:
+        global all_groups
+        _all_groups = all_groups
+
     group = {}
     group['name'] = name.upper()
     group['groupType'] = 'workgroup'
     group['description'] = name
-    file_name = '{0}/tmp/group_add.{1}'.format(import_dir,new_group_count)
+    file_name = '{0}/tmp/group_add.{1}'.format(import_dir,_new_group_count)
     with open(file_name, 'w') as fp:
         json.dump(group, fp, ensure_ascii=False)
     result = json.load(os.popen('/usr/sbin/crx_api_post_file.sh groups/add ' + file_name))
-    new_group_count = new_group_count + 1
+    _new_group_count = _new_group_count + 1
     if debug:
         print(add_group)
         print(result)
     if result['code'] == 'OK':
-        all_groups.append(name.upper())
+        _all_groups.append(name.upper())
         return True
     else:
         log_error(result['value'])
         return False
 
-def add_class(name):
-    global new_group_count
-    global existing_classes
+def add_class(name, _new_group_count=None, _existing_classes=None):
+
+    if _new_group_count is None:
+        global new_group_count
+        _new_group_count = new_group_count
+
+    if _existing_classes is None:
+        global existing_classes
+        _existing_classes = existing_classes
+
     group = {}
     group['name'] = name.upper()
     group['groupType'] = 'class'
     #TODO translation
     group['description'] ='Klasse ' + name
-    file_name = '{0}/tmp/group_add.{1}'.format(import_dir,new_group_count)
+    file_name = '{0}/tmp/group_add.{1}'.format(import_dir,_new_group_count)
     with open(file_name, 'w') as fp:
         json.dump(group, fp, ensure_ascii=False)
     result = json.load(os.popen('/usr/sbin/crx_api_post_file.sh groups/add ' + file_name))
-    existing_classes.append(name)
-    new_group_count = new_group_count + 1
+    _existing_classes.append(name)
+    _new_group_count = _new_group_count + 1
     if debug:
         print(result)
     if result['code'] == 'OK':
@@ -134,15 +156,25 @@ def add_class(name):
         log_error(result['value'])
         return False
 
-def add_user(user,ident):
-    global password
-    global new_user_count
-    global import_list
+def add_user(user,ident, _password=None, _new_user_count=None, _import_list=None):
+
+    if _password is None:
+        global password
+        _password = password
+
+    if _new_user_count is None:
+        global new_user_count
+        _new_user_count = new_user_count
+
+    if _import_list is None:
+        global import_list
+        _import_list = import_list
+
     local_password = ""
     if mustChange:
         user['mustChange'] = True
-    if password != "":
-        local_password = password
+    if _password != "":
+        local_password = _password
     if appendBirthdayToPassword:
         local_password = local_password + user['birthDay']
     if appendClassToPassword:
@@ -173,17 +205,17 @@ def add_user(user,ident):
             user['msQuota'] = -1
         else:
             user['msQuota'] = msQuota
-    file_name = '{0}/tmp/user_add.{1}'.format(import_dir,new_user_count)
+    file_name = '{0}/tmp/user_add.{1}'.format(import_dir,_new_user_count)
     with open(file_name, 'w') as fp:
         json.dump(user, fp, ensure_ascii=False)
     result = json.load(os.popen('/usr/sbin/crx_api_post_file.sh users/insert ' + file_name))
     if debug:
         print(result)
     if result['code'] == 'OK':
-        import_list[ident]['id']       = result['objectId']
-        import_list[ident]['uid']      = result['parameters'][0]
-        import_list[ident]['password'] = result['parameters'][3]
-        new_user_count = new_user_count + 1
+        _import_list[ident]['id']       = result['objectId']
+        _import_list[ident]['uid']      = result['parameters'][0]
+        _import_list[ident]['password'] = result['parameters'][3]
+        _new_user_count = _new_user_count + 1
         return True
     else:
         log_error(result['value'])
@@ -233,22 +265,6 @@ def move_user(uid,old_classes,new_classes):
            result = os.popen(cmd).read()
            if debug:
                print(result)
-
-def delete_user(uid):
-    cmd = '/usr/sbin/crx_api_text.sh DELETE "users/text/{0}"'.format(uid)
-    if debug:
-        print(cmd)
-    result = os.popen(cmd).read()
-    if debug:
-        print(result)
-
-def delete_class(group):
-    cmd = '/usr/sbin/crx_api_text.sh DELETE "groups/text/{0}"'.format(group)
-    if debug:
-        print(cmd)
-    result = os.popen(cmd).read()
-    if debug:
-        print(result)
 
 def _write_user_list():
     file_name = '{0}/all-{1}.txt'.format(import_dir,role)

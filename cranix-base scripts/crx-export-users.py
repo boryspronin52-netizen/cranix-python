@@ -2,7 +2,7 @@ import json
 import sys
 import os
 
-from ..python import _init_functions
+from ..cranix import _init_functions
 
 role=sys.argv[1]
 

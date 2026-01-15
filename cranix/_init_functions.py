@@ -59,7 +59,7 @@ def build_user_id(user: dict, identifier: str) -> str:
 
     return uid.upper().replace(" ", "_")
 
-def read_csv(path: str, identifier: str = "sn-gn-bd", debug: bool = False) -> dict:
+def read_csv(path: str, identifier: str = "sn-gn-bd") -> dict:
 
     users = {}
 
@@ -129,7 +129,7 @@ def log_debug(text, obj, debug=True):
         print(text)
         print(obj)
 
-def close(check_password: bool):
+def close(check_pw: bool):
     if check_pw:
         os.system("/usr/sbin/crx_api.sh PUT system/configuration/CHECK_PASSWORD_QUALITY/yes")
     else:
@@ -137,7 +137,7 @@ def close(check_password: bool):
     os.remove(lockfile)
     log_msg("Import finished","OK")
 
-def close_on_error(msg, check_password: bool):
+def close_on_error(msg, check_pw: bool):
     if check_pw:
         os.system("/usr/sbin/crx_api.sh PUT system/configuration/CHECK_PASSWORD_QUALITY/yes")
     else:
@@ -146,3 +146,19 @@ def close_on_error(msg, check_password: bool):
     log_error(msg)
     log_msg("Import finished","ERROR")
     sys.exit(1)
+
+def delete_user(uid):
+    cmd = '/usr/sbin/crx_api_text.sh DELETE "users/text/{0}"'.format(uid)
+    if debug:
+        print(cmd)
+    result = os.popen(cmd).read()
+    if debug:
+        print(result)
+
+def delete_class(group):
+    cmd = '/usr/sbin/crx_api_text.sh DELETE "groups/text/{0}"'.format(group)
+    if debug:
+        print(cmd)
+    result = os.popen(cmd).read()
+    if debug:
+        print(result)
